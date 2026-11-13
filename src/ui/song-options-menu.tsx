@@ -1,18 +1,17 @@
+import type { FavouriteItem, PlayerTrack, Song } from "src/models";
+
 import TrackPlayer from "@rntp/player";
+import { decodeHTML } from "entities";
+import { useState } from "react";
+import { Share } from "react-native";
+import { toggleFavourite, useIsFavourite } from "src/db";
 import {
-  Heart as HeartOffIcon,
-  HeartPlus as HeartPlusIcon,
+  Heart as HeartIcon,
   ListPlus as ListPlusIcon,
   MoreVertical as MoreIcon,
   Play as PlayIcon,
   Share2 as ShareIcon,
-} from "@tamagui/lucide-icons-2";
-import { decodeHTML } from "entities";
-import { useSQLiteContext } from "expo-sqlite";
-import { useState } from "react";
-import { Share } from "react-native";
-import { toggleFavourite, useIsFavourited } from "src/db";
-import type { FavouriteItem, Song } from "src/models";
+} from "src/icons";
 import { createTrack } from "src/utils";
 import {
   Avatar,
@@ -23,180 +22,188 @@ import {
   Separator,
   Sheet,
   SizableText,
+  toast,
   XStack,
-  YGroup,
   YStack,
 } from "tamagui";
 
-export function SongOptionsMenu(song: Song) {
+import type { MediaListItemData } from "./media-list-item";
+
+export type SongOptionsMenuProps =
+  | {
+      track: PlayerTrack;
+      song?: never;
+    }
+  | {
+      song: Song | MediaListItemData;
+      track?: never;
+    }
+  | (MediaListItemData & {
+      track?: never;
+      song?: never;
+    });
+
+export function SongOptionsMenu(props: SongOptionsMenuProps) {
   const [open, setOpen] = useState(false);
-  const db = useSQLiteContext();
-  const isFavourite = useIsFavourited(song.id);
+
+  const track = props.track;
+  const song = props.song ?? (track ? undefined : (props as MediaListItemData));
+
+  const id = track ? track.extras?.saavnId || track.mediaId : (song?.id ?? "");
+  const title = track ? track.title || "" : (song?.title ?? "");
+  const subtitle = track ? track.artist || "" : (song?.subtitle ?? "");
+  const image = track ? track.artworkUrl?.toString() || "" : (song?.image ?? "");
+  const permaUrl = track ? track.extras?.permaUrl || "" : (song?.perma_url ?? "");
+  const itemType = (track ? "song" : song?.type || "song") as FavouriteItem["type"];
+
+  const isFavourite = useIsFavourite(id);
   const favouriteItem: FavouriteItem = {
-    id: song.id,
-    title: song.title,
-    subtitle: song.subtitle,
-    image: song.image,
-    type: song.type,
-    perma_url: song.perma_url,
+    id,
+    title,
+    subtitle,
+    image,
+    type: itemType,
+    perma_url: permaUrl,
+  };
+
+  const handlePlayNow = () => {
+    if (track) {
+      TrackPlayer.setMediaItems([track]);
+    } else if (song) {
+      TrackPlayer.setMediaItems([createTrack(song)]);
+    }
+    TrackPlayer.play();
+    setOpen(false);
+  };
+
+  const handleAddToQueue = () => {
+    if (track) {
+      TrackPlayer.addMediaItem(track);
+    } else if (song) {
+      TrackPlayer.addMediaItem(createTrack(song));
+    }
+    toast.success("Track added to queue.");
+    setOpen(false);
   };
 
   return (
     <>
-      <Button chromeless icon={MoreIcon} circular size="$3" onPress={() => setOpen(true)} />
+      <Button variant="quiet" icon={MoreIcon} circular size="sm" onPress={() => setOpen(true)} />
       {open && (
         <Sheet
           modal
           open={open}
           onOpenChange={setOpen}
-          snapPoints={[35]}
+          snapPoints={[40]}
           dismissOnSnapToBottom
           zIndex={100_000}
-          // @ts-expect-error Tamagui Sheet runtime supports animation prop
-          animation="medium"
+          transition="medium"
         >
-          <Sheet.Overlay
-            // @ts-expect-error Tamagui Sheet.Overlay runtime supports animation prop
-            animation="lazy"
-            bg="$shadow6"
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
+          <Sheet.Overlay transition="lazy" bg="shadow-6" opacity="enter:0 exit:0" />
 
-          <Sheet.Handle bg="$color7" />
-          <Sheet.Frame
-            flex={1}
-            borderTopLeftRadius="$5"
-            borderTopRightRadius="$5"
-            borderTopWidth={1}
-            borderTopColor="$borderColor"
-            p="$3"
-            gap="$2.5"
-          >
-            <XStack items="center" gap="$2.5" mb="$2" px="$1">
-              <Avatar size="$4" rounded="$2">
-                <Avatar.Image src={song.image} />
-                <Avatar.Fallback bg="$color4" rounded="$2" />
+          <Sheet.Container flex={1} p="4" gap="2-5">
+            <Sheet.Handle bg="color-7" />
+            <Sheet.Background
+              borderTopLeftRadius="2xl"
+              borderTopRightRadius="2xl"
+              borderTopWidth={1}
+              borderTopColor="border-color"
+            />
+            <XStack items="center" gap="3" mb="2-5" px="1">
+              <Avatar size={48} rounded="xl">
+                <Avatar.Image src={image} />
+                <Avatar.Fallback bg="color-4" rounded="xl" />
               </Avatar>
               <YStack flex={1} overflow="hidden">
-                <H4 fontSize="$3" fontWeight="700" numberOfLines={1}>
-                  {decodeHTML(song.title)}
+                <H4 fontSize={16} fontWeight="700" letterSpacing={-0.2} numberOfLines={1}>
+                  {decodeHTML(title)}
                 </H4>
-                <Paragraph size="$1" color="$color11" numberOfLines={1} mt="$0.5">
-                  {decodeHTML(song.subtitle)}
-                </Paragraph>
+                {Boolean(subtitle) && (
+                  <Paragraph fontSize={13} color="color-10" numberOfLines={1} mt="0-5">
+                    {decodeHTML(subtitle)}
+                  </Paragraph>
+                )}
               </YStack>
             </XStack>
 
-            <Separator borderColor="$borderColor" />
+            <Separator borderColor="border-color" />
 
-            <YGroup self="center" width="100%" size="$4" bg="transparent" gap="$0.5">
-              <YGroup.Item>
-                <ListItem
-                  items="center"
-                  icon={
-                    <YStack width={28} height={28} items="center" justify="center">
-                      <PlayIcon size={18} color="$blue10" />
-                    </YStack>
-                  }
-                  title={
-                    <SizableText size="$3" fontWeight="500" color="$color12">
-                      Play song now
-                    </SizableText>
-                  }
-                  size="$3"
-                  py="$2"
-                  px="$2"
-                  rounded="$2"
-                  hoverStyle={{ bg: "$color3" }}
-                  pressStyle={{ bg: "$color4", scale: 0.99 }}
-                  onPress={() => {
-                    TrackPlayer.setMediaItems([createTrack(song)]);
-                    TrackPlayer.play();
-                    setOpen(false);
-                  }}
+            <YStack w="100%" gap="1">
+              <ListItem
+                items="center"
+                size="sm"
+                py="2-5"
+                px="2"
+                rounded="xl"
+                bg="hover:color-3 press:color-4"
+                scale="press:0.99"
+                icon=<PlayIcon size={18} color="accent-background" />
+                title={
+                  <SizableText fontSize={15} fontWeight="500" color="color">
+                    Play song now
+                  </SizableText>
+                }
+                onPress={handlePlayNow}
+              />
+              <ListItem
+                items="center"
+                size="sm"
+                py="2-5"
+                px="2"
+                rounded="xl"
+                bg="hover:color-3 press:color-4"
+                scale="press:0.99"
+                icon=<ListPlusIcon size={18} color="color-9" />
+                title={
+                  <SizableText fontSize={15} fontWeight="500" color="color">
+                    Add to queue
+                  </SizableText>
+                }
+                onPress={handleAddToQueue}
+              />
+              <ListItem
+                items="center"
+                size="sm"
+                py="2-5"
+                px="2"
+                rounded="xl"
+                bg="hover:color-3 press:color-4"
+                scale="press:0.99"
+                icon=<HeartIcon
+                  size={18}
+                  color={isFavourite ? "accent-background" : "color-9"}
+                  fill={isFavourite ? "accent-background" : "transparent"}
                 />
-              </YGroup.Item>
-              <YGroup.Item>
-                <ListItem
-                  items="center"
-                  icon={
-                    <YStack width={28} height={28} items="center" justify="center">
-                      <ListPlusIcon size={18} color="$color11" />
-                    </YStack>
-                  }
-                  title={
-                    <SizableText size="$3" fontWeight="500" color="$color12">
-                      Add to queue
-                    </SizableText>
-                  }
-                  size="$3"
-                  py="$2"
-                  px="$2"
-                  rounded="$2"
-                  hoverStyle={{ bg: "$color3" }}
-                  pressStyle={{ bg: "$color4", scale: 0.99 }}
-                  onPress={() => {
-                    TrackPlayer.addMediaItem(createTrack(song));
-                    setOpen(false);
-                  }}
-                />
-              </YGroup.Item>
-              <YGroup.Item>
-                <ListItem
-                  items="center"
-                  icon={
-                    <YStack width={28} height={28} items="center" justify="center">
-                      {isFavourite ? (
-                        <HeartOffIcon size={18} color="$blue10" />
-                      ) : (
-                        <HeartPlusIcon size={18} color="$color11" />
-                      )}
-                    </YStack>
-                  }
-                  title={
-                    <SizableText size="$3" fontWeight="500" color="$color12">
-                      {isFavourite ? "Remove from favourites" : "Save to favourites"}
-                    </SizableText>
-                  }
-                  size="$3"
-                  py="$2"
-                  px="$2"
-                  rounded="$2"
-                  hoverStyle={{ bg: "$color3" }}
-                  pressStyle={{ bg: "$color4", scale: 0.99 }}
-                  onPress={async () => {
-                    setOpen(false);
-                    await toggleFavourite(db, favouriteItem);
-                  }}
-                />
-              </YGroup.Item>
-              <YGroup.Item>
-                <ListItem
-                  items="center"
-                  icon={
-                    <YStack width={28} height={28} items="center" justify="center">
-                      <ShareIcon size={18} color="$color11" />
-                    </YStack>
-                  }
-                  title={
-                    <SizableText size="$3" fontWeight="500" color="$color12">
-                      Share song
-                    </SizableText>
-                  }
-                  size="$3"
-                  py="$2"
-                  px="$2"
-                  rounded="$2"
-                  hoverStyle={{ bg: "$color3" }}
-                  pressStyle={{ bg: "$color4", scale: 0.99 }}
-                  onPress={() => {
-                    Share.share({ message: song.perma_url });
-                  }}
-                />
-              </YGroup.Item>
-            </YGroup>
-          </Sheet.Frame>
+                title={
+                  <SizableText fontSize={15} fontWeight="500" color="color">
+                    {isFavourite ? "Remove from library" : "Save to library"}
+                  </SizableText>
+                }
+                onPress={async () => {
+                  setOpen(false);
+                  await toggleFavourite(favouriteItem);
+                }}
+              />
+              <ListItem
+                items="center"
+                size="sm"
+                py="2-5"
+                px="2"
+                rounded="xl"
+                bg="hover:color-3 press:color-4"
+                scale="press:0.99"
+                icon=<ShareIcon size={18} color="color-9" />
+                title={
+                  <SizableText fontSize={15} fontWeight="500" color="color">
+                    Share the song
+                  </SizableText>
+                }
+                onPress={() => {
+                  Share.share({ message: permaUrl }).catch(() => {});
+                }}
+              />
+            </YStack>
+          </Sheet.Container>
         </Sheet>
       )}
     </>

@@ -3,5 +3,14 @@ import native from "oxlint-config-universe/native";
 
 export default defineConfig({
   extends: [native],
-  ignorePatterns: [".agents/**", ".expo/**", "tamagui-web.css", "tamagui.generated.css"],
+  plugins: ["import", "react", "react-perf"],
+  ignorePatterns: [
+    ".github/**",
+    ".expo/**",
+    ".tamagui",
+    "android",
+    "ios",
+    "dist",
+    "tamagui.generated.css",
+  ],
 });

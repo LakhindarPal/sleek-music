@@ -1,34 +1,27 @@
-import TrackPlayer from "@rntp/player";
-import { ListPlus as ListPlusIcon } from "@tamagui/lucide-icons-2";
-import { Redirect, type RelativePathString, useLocalSearchParams } from "expo-router";
 import type { AlbumDetailResponse, Song, SongDetailResponse } from "src/models";
-import { ContentRails, HeroBanner, MediaListItem } from "src/ui";
+
+import TrackPlayer from "@rntp/player";
+import { Unmatched, useLocalSearchParams } from "expo-router";
+import { ListPlus as ListPlusIcon } from "src/icons";
+import { ContentRails, HeroBanner, LoadingView, MediaListItem, TryAgain } from "src/ui";
 import { apiFetcher, createTrack, dedupArtists, formatDuration, prettifyNumber } from "src/utils";
 import useSWRImmutable from "swr/immutable";
-import {
-  Button,
-  H3,
-  ScrollView,
-  Separator,
-  SizableText,
-  Spinner,
-  XStack,
-  YGroup,
-  YStack,
-} from "tamagui";
+import { Button, H3, ScrollView, Separator, SizableText, toast, XStack, YStack } from "tamagui";
 
 export default function SongPage() {
   const { token } = useLocalSearchParams();
-  const { data, error, isLoading } = useSWRImmutable<SongDetailResponse>(
+  const { data, error, isLoading, mutate } = useSWRImmutable<SongDetailResponse>(
     ["song_detail", { token }],
     apiFetcher,
   );
   const song = data?.songs[0];
 
+  const albumToken = song?.more_info?.album_url
+    ? song.more_info.album_url.split("/").filter(Boolean).pop()
+    : undefined;
+
   const { data: album } = useSWRImmutable<AlbumDetailResponse>(
-    song?.more_info?.album_url
-      ? ["album_detail", { token: song.more_info.album_url.split("/").pop()! }]
-      : null,
+    albumToken ? ["album_detail", { token: albumToken }] : null,
     apiFetcher,
   );
 
@@ -54,15 +47,15 @@ export default function SongPage() {
   );
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
   }
 
-  if (error || !song) {
-    return <Redirect href={"/404" as RelativePathString} />;
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!song) {
+    return <Unmatched />;
   }
 
   const extras = [
@@ -93,9 +86,9 @@ export default function SongPage() {
 
   return (
     <ScrollView
-      px="$3"
-      contentContainerStyle={{ pb: 100 }}
-      bg="$background"
+      px="3"
+      bg="background"
+      contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       <HeroBanner
@@ -104,44 +97,42 @@ export default function SongPage() {
         subtitle={song.subtitle}
         type="song"
         image={song.image}
-        songs={data!.songs}
+        songs={data.songs}
         perma_url={song.perma_url}
       >
-        <XStack items="center" gap="$1.5">
-          <SizableText size="$1" color="$color11">
+        <XStack items="center" gap="1-5">
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {song.year}
           </SizableText>
-          <Separator vertical height={10} />
-          <SizableText size="$1" color="$color11">
+          <Separator vertical h={10} borderColor="border-color" />
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {prettifyNumber(Number(song.play_count))} plays
           </SizableText>
-          <Separator vertical height={10} />
-          <SizableText size="$1" color="$color11">
+          <Separator vertical h={10} borderColor="border-color" />
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {formatDuration(Number(song.more_info.duration), "pretty")}
           </SizableText>
         </XStack>
       </HeroBanner>
       {!!albumSongs?.length && (
         <>
-          <Separator my="$2" />
+          <Separator my="3" borderColor="border-color" />
           <YStack>
-            <XStack items="center" justify="space-between" mb="$1.5">
-              <H3 fontSize="$4" fontWeight="700" $sm={{ fontSize: "$3" }}>
+            <XStack items="center" justify="space-between" mb="1-5">
+              <H3 fontSize={20} fontWeight="700" letterSpacing={-0.3}>
                 From same album
               </H3>
               <AddAllButton songs={albumSongs} />
             </XStack>
-            <YGroup size="$4">
+            <YStack>
               {albumSongs.map((albumSong, index) => (
-                <YGroup.Item key={albumSong.id}>
-                  <MediaListItem {...albumSong} trackNumber={index + 1} />
-                </YGroup.Item>
+                <MediaListItem key={albumSong.id} {...albumSong} trackNumber={index + 1} />
               ))}
-            </YGroup>
+            </YStack>
           </YStack>
         </>
       )}
-      <Separator my="$2" />
+      <Separator my="3" borderColor="border-color" />
       <ContentRails data={extras} />
     </ScrollView>
   );
@@ -153,16 +144,18 @@ function AddAllButton({ songs }: { songs: Song[] | undefined }) {
   }
   return (
     <Button
-      size="$2"
-      chromeless
-      iconAfter={ListPlusIcon}
-      color="$blue10"
+      size="xs"
+      rounded="full"
+      color="accent-background"
       fontWeight="600"
-      hoverStyle={{ opacity: 0.8 }}
-      pressStyle={{ opacity: 0.7, scale: 0.97 }}
+      opacity="hover:0.8 press:0.7"
+      scale="press:0.97"
+      variant="quiet"
+      iconAfter={ListPlusIcon}
       onPress={() => {
         const tracks = songs.map(createTrack);
         TrackPlayer.addMediaItems(tracks);
+        toast.success(`${tracks.length} ${tracks.length > 1 ? "tracks" : "track"} added to queue.`);
       }}
     >
       Add all

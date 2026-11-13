@@ -2,18 +2,15 @@ import TrackPlayer, { Event, type MediaItem } from "@rntp/player";
 import { useEffect, useState } from "react";
 
 export const useQueueTracks = () => {
-  const [tracks, setTracks] = useState<MediaItem[]>([]);
+  const [tracks, setTracks] = useState<MediaItem[]>(() => TrackPlayer.getQueue());
 
   useEffect(() => {
     let isMounted = true;
     const updateQueue = () => {
       if (isMounted) {
-        const queue = TrackPlayer.getQueue();
-        setTracks(queue);
+        setTracks(TrackPlayer.getQueue());
       }
     };
-
-    updateQueue();
 
     const queueSubscription = TrackPlayer.addEventListener(Event.QueueChanged, updateQueue);
     const transitionSubscription = TrackPlayer.addEventListener(

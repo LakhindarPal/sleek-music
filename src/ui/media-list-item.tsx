@@ -1,7 +1,7 @@
+import type { JSX } from "react";
+
 import { decodeHTML } from "entities";
-import { Link, type RelativePathString } from "expo-router";
-import { memo, type JSX } from "react";
-import type { Song } from "src/models";
+import { router, type RelativePathString } from "expo-router";
 import { formatDuration, parsePath } from "src/utils";
 import { Avatar, ListItem, SizableText, XStack } from "tamagui";
 
@@ -10,12 +10,18 @@ import { SongOptionsMenu } from "./song-options-menu";
 export type MediaListItemData = {
   id: string;
   title: string;
-  subtitle?: string;
-  image: string;
+  subtitle?: string | null;
+  image?: string | null;
   perma_url: string;
   type?: string;
+  language?: string;
+  explicit_content?: "0" | "1";
   more_info?: {
     duration?: string | number;
+    encrypted_media_url?: string;
+    album?: string;
+    release_date?: string;
+    has_lyrics?: string;
   };
 };
 
@@ -24,66 +30,66 @@ export type MediaListItemProps = MediaListItemData & {
   iconAfterOverride?: JSX.Element;
 };
 
-export const MediaListItem = memo(function MediaListItem({
-  trackNumber,
-  iconAfterOverride,
-  ...song
-}: MediaListItemProps) {
+export function MediaListItem({ trackNumber, iconAfterOverride, ...song }: MediaListItemProps) {
   const isArtistItem = song.type === "artist" || /\/artist\//i.test(song.perma_url);
   const duration = song.more_info?.duration
     ? formatDuration(Number(song.more_info.duration))
     : null;
 
   return (
-    <XStack
+    <ListItem
+      w="100%"
       items="center"
-      justify="space-between"
-      width="100%"
-      rounded="$3"
-      hoverStyle={{ bg: "$color3" }}
-      pressStyle={{ bg: "$color4", scale: 0.99 }}
-    >
-      <Link href={parsePath(song.perma_url) as RelativePathString} asChild style={{ flex: 1 }}>
-        <ListItem
-          flex={1}
-          items="center"
-          icon={
-            <XStack items="center" gap="$2">
-              {trackNumber !== undefined && (
-                <SizableText size="$1" color="$color10" width={18} text="center" fontWeight="600">
-                  {trackNumber < 10 ? `0${trackNumber}` : trackNumber}
+      size="3"
+      py="1-5"
+      px="2"
+      gap="2-5"
+      bg="hover:color-3 press:color-4"
+      scale="press:0.99"
+      rounded="xl"
+      cursor="pointer"
+      onPress={() => router.push(parsePath(song.perma_url) as RelativePathString)}
+      icon={
+        <XStack items="center" gap="2">
+          {trackNumber !== undefined && (
+            <SizableText fontSize={12} color="color-9" w={20} text="right" fontWeight="500">
+              {trackNumber < 10 ? `0${trackNumber}` : trackNumber}
+            </SizableText>
+          )}
+          <Avatar size={46} circular={isArtistItem} rounded={isArtistItem ? undefined : "lg"}>
+            <Avatar.Image src={song.image ?? undefined} />
+            <Avatar.Fallback bg="color-4" rounded={isArtistItem ? undefined : "lg"} />
+          </Avatar>
+        </XStack>
+      }
+      title={
+        <SizableText fontSize={15} fontWeight="600" letterSpacing={-0.1} numberOfLines={1}>
+          {decodeHTML(song.title)}
+        </SizableText>
+      }
+      subTitle={
+        song.subtitle ? (
+          <SizableText fontSize={12} color="color-10" numberOfLines={1} mt="0-5">
+            {decodeHTML(song.subtitle)}
+          </SizableText>
+        ) : undefined
+      }
+      iconAfter={
+        <XStack items="center" gap="1-5">
+          {iconAfterOverride !== undefined ? (
+            iconAfterOverride
+          ) : (
+            <>
+              {duration && (
+                <SizableText fontSize={12} color="color-9" fontWeight="500">
+                  {duration}
                 </SizableText>
               )}
-              <Avatar size="$4" rounded={isArtistItem ? "$10" : "$2"}>
-                <Avatar.Image src={song.image} />
-                <Avatar.Fallback bg="$color4" rounded={isArtistItem ? "$10" : "$2"} />
-              </Avatar>
-            </XStack>
-          }
-          title={decodeHTML(song.title)}
-          subTitle={decodeHTML(song.subtitle || "")}
-          size="$3"
-          py="$1"
-          px="$2"
-          bg="transparent"
-          rounded="$3"
-        />
-      </Link>
-
-      <XStack items="center" gap="$1.5" pr="$2">
-        {iconAfterOverride !== undefined ? (
-          iconAfterOverride
-        ) : (
-          <>
-            {duration && (
-              <SizableText size="$1" color="$color10" fontWeight="500">
-                {duration}
-              </SizableText>
-            )}
-            <SongOptionsMenu {...(song as Song)} />
-          </>
-        )}
-      </XStack>
-    </XStack>
+              <SongOptionsMenu song={song} />
+            </>
+          )}
+        </XStack>
+      }
+    />
   );
-});
+}

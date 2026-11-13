@@ -1,6 +1,5 @@
-import { Menu as MenuIcon } from "@tamagui/lucide-icons-2";
-import { Link, RelativePathString, router, Stack } from "expo-router";
-import { Button, useTheme } from "tamagui";
+import { Stack } from "expo-router";
+import { useTheme } from "tamagui";
 
 export default function HomeStackLayout() {
   const theme = useTheme();
@@ -9,12 +8,12 @@ export default function HomeStackLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: theme.background.val,
+          backgroundColor: theme.background?.val,
         },
-        headerTintColor: theme.color.val,
+        headerTintColor: theme.color?.val,
         headerShadowVisible: false,
         contentStyle: {
-          backgroundColor: theme.background.val,
+          backgroundColor: theme.background?.val,
         },
       }}
     >
@@ -22,21 +21,6 @@ export default function HomeStackLayout() {
         name="index"
         options={{
           title: "Home",
-          headerLeft: () => (
-            <Link href={"/settings" as RelativePathString} asChild>
-              <Button chromeless circular size="$3" icon={MenuIcon} ml="$2" />
-            </Link>
-          ),
-          headerSearchBarOptions: {
-            placeholder: "Search for music...",
-            autoFocus: false,
-            onSearchButtonPress: (event) => {
-              const query = event.nativeEvent.text.trim();
-              if (query) {
-                router.navigate(`${`/search/${encodeURIComponent(query)}` as RelativePathString}`);
-              }
-            },
-          },
         }}
       />
       <Stack.Screen
@@ -79,12 +63,6 @@ export default function HomeStackLayout() {
         name="artist/[token]/albums"
         options={{
           title: "Artist Albums",
-        }}
-      />
-      <Stack.Screen
-        name="search"
-        options={{
-          title: "Search",
         }}
       />
       <Stack.Screen

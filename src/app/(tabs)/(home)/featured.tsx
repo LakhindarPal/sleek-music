@@ -1,36 +1,32 @@
-import { PlaylistFeaturedResponse } from "src/models";
-import { GridView, MediaCard } from "src/ui";
+import type { PlaylistFeaturedResponse } from "src/models";
+
+import { Unmatched } from "expo-router";
+import { GridView, LoadingView, MediaCard, TryAgain } from "src/ui";
 import { apiFetcher, getLanguagesParam } from "src/utils";
 import useSWR from "swr";
-import { Paragraph, Spinner, YStack } from "tamagui";
+import { YStack } from "tamagui";
 
 export default function FeaturedPlaylistsPage() {
   const params = { languages: getLanguagesParam() };
-  const { data, isLoading } = useSWR<PlaylistFeaturedResponse>(
+  const { data, error, isLoading, mutate } = useSWR<PlaylistFeaturedResponse>(
     ["featured_playlists", params],
     apiFetcher,
   );
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
+  }
+
+  if (error) {
+    return <TryAgain refresh={mutate} />;
   }
 
   if (!data) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center" gap="$3">
-        <Paragraph size="$4" color="$color11">
-          Data not found
-        </Paragraph>
-      </YStack>
-    );
+    return <Unmatched />;
   }
 
   return (
-    <YStack flex={1} bg="$background" px="$3" pt="$2">
+    <YStack flex={1} bg="background" px="3" pt="2">
       <GridView>
         {data?.data.map((playlist) => (
           <MediaCard

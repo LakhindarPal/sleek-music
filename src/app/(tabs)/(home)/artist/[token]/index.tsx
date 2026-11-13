@@ -1,38 +1,36 @@
-import { ArrowRight as ArrowRightIcon } from "@tamagui/lucide-icons-2";
-import { Link, Redirect, type RelativePathString, useLocalSearchParams } from "expo-router";
 import type { ArtistOverviewResponse } from "src/models";
-import { ContentRails, HeroBanner, MediaCard, MediaListItem } from "src/ui";
+
+import { Unmatched, useLocalSearchParams } from "expo-router";
+import {
+  ContentRails,
+  HeroBanner,
+  LoadingView,
+  MediaCard,
+  MediaListItem,
+  MoreLink,
+  TryAgain,
+} from "src/ui";
 import { apiFetcher, prettifyNumber, toCapitalize } from "src/utils";
 import useSWR from "swr";
-import {
-  Button,
-  H3,
-  ScrollView,
-  Separator,
-  SizableText,
-  Spinner,
-  XStack,
-  YGroup,
-  YStack,
-} from "tamagui";
+import { H3, ScrollView, Separator, SizableText, XStack, YStack } from "tamagui";
 
 export default function ArtistOverviewPage() {
   const { token } = useLocalSearchParams();
-  const { data, error, isLoading } = useSWR<ArtistOverviewResponse>(
+  const { data, error, isLoading, mutate } = useSWR<ArtistOverviewResponse>(
     ["artist_overview", { token, p: 0, n_song: 10, n_album: 10 }],
     apiFetcher,
   );
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
   }
 
-  if (!data || error) {
-    return <Redirect href={"/404" as RelativePathString} />;
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!data) {
+    return <Unmatched />;
   }
 
   const extras = [
@@ -65,89 +63,63 @@ export default function ArtistOverviewPage() {
 
   return (
     <ScrollView
-      px="$3"
-      contentContainerStyle={{ pb: 100 }}
-      bg="$background"
+      px="3"
+      bg="background"
+      contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       <HeroBanner
         id={data.artistId}
-        title={data.name!}
+        title={data.name}
         subtitle={data.dominantType}
         type="artist"
-        image={data.image!}
+        image={data.image}
         songs={data.topSongs}
-        perma_url={data.urls.overview!}
+        perma_url={data.urls.overview}
       >
-        <XStack items="center" gap="$1.5">
-          <SizableText size="$1" color="$color11">
+        <XStack items="center" gap="1-5">
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {toCapitalize(data.dominantType)}
           </SizableText>
-          <Separator vertical height={10} />
-          <SizableText size="$1" color="$color11">
+          <Separator vertical h={10} borderColor="border-color" />
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {prettifyNumber(Number(data.fan_count))} Listeners
           </SizableText>
         </XStack>
       </HeroBanner>
-      <Separator my="$2" />
+      <Separator my="3" borderColor="border-color" />
 
       <YStack>
-        <XStack gap="$2" justify="space-between" items="center" mb="$1.5">
-          <H3 fontSize="$4" fontWeight="700" $sm={{ fontSize: "$3" }}>
+        <XStack gap="2" justify="space-between" items="center" mb="1-5">
+          <H3 fontSize={20} fontWeight="700" letterSpacing={-0.3}>
             Top Songs
           </H3>
-          <Link href={`/artist/${token}/songs` as RelativePathString} asChild>
-            <Button
-              size="$2"
-              chromeless
-              iconAfter={ArrowRightIcon}
-              color="$blue10"
-              fontWeight="600"
-              hoverStyle={{ opacity: 0.8 }}
-              pressStyle={{ opacity: 0.7 }}
-            >
-              View more
-            </Button>
-          </Link>
+          <MoreLink path={`/artist/${token}/songs`} />
         </XStack>
-        <YGroup size="$4">
+        <YStack>
           {data.topSongs.map((song, index) => (
-            <YGroup.Item key={song.id}>
-              <MediaListItem {...song} trackNumber={index + 1} />
-            </YGroup.Item>
+            <MediaListItem key={song.id} {...song} trackNumber={index + 1} />
           ))}
-        </YGroup>
+        </YStack>
       </YStack>
 
-      {!!data.topAlbums.length && (
+      {data.topAlbums?.length > 0 && (
         <>
-          <Separator my="$2" />
+          <Separator my="3" borderColor="border-color" />
           <YStack>
-            <XStack gap="$2" justify="space-between" items="center" mb="$1.5">
-              <H3 fontSize="$4" fontWeight="700" $sm={{ fontSize: "$3" }}>
+            <XStack gap="2" justify="space-between" items="center" mb="1-5">
+              <H3 fontSize={20} fontWeight="700" letterSpacing={-0.3}>
                 Top Albums
               </H3>
-              <Link href={`/artist/${token}/albums` as RelativePathString} asChild>
-                <Button
-                  size="$2"
-                  chromeless
-                  iconAfter={ArrowRightIcon}
-                  color="$blue10"
-                  fontWeight="600"
-                  hoverStyle={{ opacity: 0.8 }}
-                  pressStyle={{ opacity: 0.7 }}
-                >
-                  View more
-                </Button>
-              </Link>
+              <MoreLink path={`/artist/${token}/albums`} />
             </XStack>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              mb="$1.5"
+              mb="1-5"
               contentContainerStyle={{
-                gap: "$2.5",
-                pr: "$2.5",
+                gap: 12,
+                paddingRight: 16,
               }}
             >
               {data.topAlbums.map((album) => (
@@ -163,7 +135,7 @@ export default function ArtistOverviewPage() {
           </YStack>
         </>
       )}
-      <Separator my="$2" />
+      <Separator my="3" borderColor="border-color" />
       <ContentRails data={extras} />
     </ScrollView>
   );

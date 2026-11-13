@@ -1,3 +1,6 @@
+import LANGUAGES from "src/consts/languages";
+import QUALITIES from "src/consts/qualities";
+
 export enum MediaType {
   Artist = "artist",
   Radio = "radio_station",
@@ -8,26 +11,8 @@ export enum MediaType {
   Channel = "channel",
 }
 
-export const LANGUAGES = {
-  Hindi: "hindi",
-  Tamil: "tamil",
-  Telugu: "telugu",
-  English: "english",
-  Punjabi: "punjabi",
-  Marathi: "marathi",
-  Gujarati: "gujarati",
-  Bengali: "bengali",
-  Kannada: "kannada",
-  Bhojpuri: "bhojpuri",
-  Malayalam: "malayalam",
-  Urdu: "urdu",
-  Haryanvi: "haryanvi",
-  Rajasthani: "rajasthani",
-  Odia: "odia",
-  Assamese: "assamese",
-} as const;
-
 export type Language = (typeof LANGUAGES)[keyof typeof LANGUAGES];
+export type Quality = (typeof QUALITIES)[number];
 
 export interface Module<T = undefined> {
   source: string;

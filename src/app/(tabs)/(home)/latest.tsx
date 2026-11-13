@@ -1,31 +1,38 @@
-import { useLocalSearchParams } from "expo-router";
+import type { LatestDataResponse } from "src/models";
+
+import { Unmatched, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { LatestDataResponse } from "src/models";
-import { GridView, MediaCard } from "src/ui";
+import { GridView, LoadingView, MediaCard, TryAgain } from "src/ui";
 import { apiFetcher, getLanguagesParam, groupBy, toCapitalize } from "src/utils";
 import useSWR from "swr";
-import { Separator, SizableText, Spinner, Tabs, YStack } from "tamagui";
+import { Separator, SizableText, Tabs, YStack } from "tamagui";
 
 export default function LatestReleasesPage() {
   const { type: initialType } = useLocalSearchParams<{ type: string }>();
   const [currentTab, setCurrentTab] = useState(initialType || "song");
   const params = { languages: getLanguagesParam() };
-  const { data: latestResponse, isLoading } = useSWR<LatestDataResponse>(
-    ["latest_data", params],
-    apiFetcher,
-  );
+  const {
+    data: latestResponse,
+    isLoading,
+    error,
+    mutate,
+  } = useSWR<LatestDataResponse>(["latest_data", params], apiFetcher);
   const data = groupBy(latestResponse?.data, (item) => item.type);
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
+  }
+
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!data) {
+    return <Unmatched />;
   }
 
   return (
-    <YStack flex={1} bg="$background" px="$3" pt="$2">
+    <YStack flex={1} bg="background" px="3" pt="2">
       <Tabs
         value={currentTab}
         onValueChange={setCurrentTab}
@@ -33,7 +40,7 @@ export default function LatestReleasesPage() {
         flexDirection="column"
         flex={1}
       >
-        <Tabs.List width="100%" mb="$2">
+        <Tabs.List w="100%" mb="2" gap="1-5">
           {["song", "album"].map((tabName) => {
             const isSelected = currentTab === tabName;
             return (
@@ -41,18 +48,20 @@ export default function LatestReleasesPage() {
                 key={tabName}
                 value={tabName}
                 flex={1}
-                height="$2.5"
-                bg={isSelected ? "$blue10" : "$color3"}
-                borderColor={isSelected ? "$blue10" : "$borderColor"}
+                size="sm"
+                rounded="xl"
+                py="2"
+                bg={isSelected ? "accent-background" : "color-3"}
+                borderColor={isSelected ? "accent-background" : "border-color"}
                 borderWidth={1}
-                pressStyle={{ opacity: 0.85 }}
+                opacity="press:0.85"
                 items="center"
                 justify="center"
               >
                 <SizableText
-                  size="$2"
+                  size="2"
                   fontWeight={isSelected ? "700" : "500"}
-                  color={isSelected ? "white" : "$color11"}
+                  color={isSelected ? "white" : "color-9"}
                 >
                   {toCapitalize(tabName) + "s"}
                 </SizableText>
@@ -60,7 +69,7 @@ export default function LatestReleasesPage() {
             );
           })}
         </Tabs.List>
-        <Separator my="$1.5" />
+        <Separator my="1-5" />
         {["song", "album"].map((type) => {
           const items = data[type] || [];
           return (
@@ -78,8 +87,8 @@ export default function LatestReleasesPage() {
                   ))}
                 </GridView>
               ) : (
-                <YStack flex={1} items="center" justify="center" p="$4">
-                  <SizableText color="$color11">No latest {type}s found</SizableText>
+                <YStack flex={1} items="center" justify="center" p="4">
+                  <SizableText color="color-9">No latest {type}s found</SizableText>
                 </YStack>
               )}
             </Tabs.Content>

@@ -1,12 +1,13 @@
-import { BottomTabBar } from "@react-navigation/bottom-tabs";
+import { Tabs } from "expo-router";
+import { BottomTabBar } from "expo-router/js-tabs";
 import {
-  BookHeart as BookHeartIcon,
+  Library as LibraryIcon,
   Home as HomeIcon,
-  Menu as MenuIcon,
-} from "@tamagui/lucide-icons-2";
-import { Link, RelativePathString, Tabs } from "expo-router";
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+} from "src/icons";
 import { FloatingPlayer } from "src/ui";
-import { Button, ColorTokens, useTheme, YStack } from "tamagui";
+import { type ColorTokens, useTheme, YStack } from "tamagui";
 
 export default function TabLayout() {
   const theme = useTheme();
@@ -14,34 +15,34 @@ export default function TabLayout() {
   return (
     <Tabs
       tabBar={(props) => (
-        <YStack bg="$background">
+        <YStack bg="background">
           <FloatingPlayer />
           <BottomTabBar {...props} />
         </YStack>
       )}
       screenOptions={{
-        tabBarActiveTintColor: theme.blue10.val,
-        tabBarInactiveTintColor: theme.color11.val,
+        tabBarActiveTintColor: theme["accent-background"]?.val,
+        tabBarInactiveTintColor: theme["color-10"]?.val,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
         },
         tabBarStyle: {
-          backgroundColor: theme.background.val,
-          borderTopColor: theme.borderColor.val,
+          backgroundColor: theme.background?.val,
+          borderTopColor: theme["border-color"]?.val,
           borderTopWidth: 1,
           elevation: 4,
-          height: 52,
-          paddingBottom: 4,
-          paddingTop: 4,
+          height: 56,
+          paddingBottom: 10,
+          paddingTop: 6,
         },
         headerStyle: {
-          backgroundColor: theme.background.val,
+          backgroundColor: theme.background?.val,
           borderBottomWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        headerTintColor: theme.color.val,
+        headerTintColor: theme.color?.val,
       }}
     >
       <Tabs.Screen
@@ -53,15 +54,24 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="favourites"
+        name="search"
         options={{
-          title: "Favourites",
-          headerLeft: () => (
-            <Link href={"/settings" as RelativePathString} asChild>
-              <Button chromeless circular size="$3" icon={MenuIcon} ml="$2" />
-            </Link>
-          ),
-          tabBarIcon: ({ color }) => <BookHeartIcon color={color as ColorTokens} />,
+          title: "Search",
+          tabBarIcon: ({ color }) => <SearchIcon color={color as ColorTokens} />,
+        }}
+      />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color }) => <LibraryIcon color={color as ColorTokens} />,
+        }}
+      />
+      <Tabs.Screen
+        name="config"
+        options={{
+          title: "Config",
+          tabBarIcon: ({ color }) => <SettingsIcon color={color as ColorTokens} />,
         }}
       />
     </Tabs>

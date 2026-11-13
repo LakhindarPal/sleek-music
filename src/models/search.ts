@@ -1,6 +1,22 @@
 import type { Language, MediaType } from "./common";
 import type { AlbumBase, AlbumResult, ArtistResult, PlaylistResult, Song } from "./music";
 
+export interface TopSearchItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  type: "song" | "album" | "artist";
+  image: string;
+  perma_url: string;
+  more_info: {
+    artistMap: [];
+    album: string;
+  };
+  is_jiotune_available: "true" | "false";
+  explicit_content: "0" | "1";
+  mini_obj: true;
+}
+
 export interface AutoSearchResponse {
   albums: Albums;
   songs: Songs;

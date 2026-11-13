@@ -1,23 +1,21 @@
 import TrackPlayer, { RepeatMode } from "@rntp/player";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 export const useRepeatMode = () => {
   const [repeatStatus, setRepeatStatus] = useState<RepeatMode>(() => TrackPlayer.getRepeatMode());
 
-  const cycleRepeatMode = useCallback(() => {
-    const nextMode =
-      repeatStatus === RepeatMode.Off
-        ? RepeatMode.One
-        : repeatStatus === RepeatMode.One
-          ? RepeatMode.All
-          : RepeatMode.Off;
-    TrackPlayer.setRepeatMode(nextMode);
-    setRepeatStatus(nextMode);
-  }, [repeatStatus]);
-
-  useEffect(() => {
-    setRepeatStatus(TrackPlayer.getRepeatMode());
-  }, []);
+  const cycleRepeatMode = () => {
+    setRepeatStatus((current) => {
+      const nextMode =
+        current === RepeatMode.Off
+          ? RepeatMode.One
+          : current === RepeatMode.One
+            ? RepeatMode.All
+            : RepeatMode.Off;
+      TrackPlayer.setRepeatMode(nextMode);
+      return nextMode;
+    });
+  };
 
   return { repeatMode: repeatStatus, cycleRepeatMode };
 };

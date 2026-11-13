@@ -1,18 +1,16 @@
 import TrackPlayer from "@rntp/player";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 
 export const useShuffleMode = () => {
   const [shuffleStatus, setShuffleStatus] = useState<boolean>(() => TrackPlayer.isShuffleEnabled());
 
-  const toggleShuffleMode = useCallback(() => {
-    const next = !shuffleStatus;
-    TrackPlayer.setShuffleEnabled(next);
-    setShuffleStatus(next);
-  }, [shuffleStatus]);
-
-  useEffect(() => {
-    setShuffleStatus(TrackPlayer.isShuffleEnabled());
-  }, []);
+  const toggleShuffleMode = () => {
+    setShuffleStatus((current) => {
+      const next = !current;
+      TrackPlayer.setShuffleEnabled(next);
+      return next;
+    });
+  };
 
   return {
     shuffleMode: shuffleStatus,

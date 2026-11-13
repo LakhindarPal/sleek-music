@@ -15,8 +15,8 @@ export interface PlayerTrack extends MediaItem {
 export interface FavouriteItem {
   id: string;
   title: string;
-  subtitle?: string;
+  subtitle?: string | null;
   perma_url: string;
-  type: "song" | "album" | "playlist" | "artist";
-  image: string;
+  type: "song" | "album" | "playlist" | "artist" | "mix";
+  image?: string | null;
 }

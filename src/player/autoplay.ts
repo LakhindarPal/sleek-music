@@ -1,5 +1,6 @@
-import TrackPlayer from "@rntp/player";
 import type { PlayerTrack } from "src/models";
+
+import TrackPlayer from "@rntp/player";
 import { apiFetcher, createTrack, extractRadioSongs, preferenceStore } from "src/utils";
 
 let autoplayInFlight = false;

@@ -1,17 +1,22 @@
 export function formatDuration(seconds: number, format: "pretty" | "colon" = "colon") {
-  if (Number.isNaN(seconds)) {
-    return "--:--";
+  if (Number.isNaN(seconds) || seconds < 0) {
+    return format === "colon" ? "00:00" : "0s";
   }
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
+  const safeSeconds = Math.floor(seconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const remainingSeconds = safeSeconds % 60;
 
   const padTwoDigits = (value: number) => String(value).padStart(2, "0");
 
   if (format === "colon") {
-    return [hours && padTwoDigits(hours), padTwoDigits(minutes), padTwoDigits(remainingSeconds)]
-      .filter(Boolean)
+    return [
+      hours > 0 ? padTwoDigits(hours) : null,
+      padTwoDigits(minutes),
+      padTwoDigits(remainingSeconds),
+    ]
+      .filter((part): part is string => part !== null)
       .join(":");
   }
 

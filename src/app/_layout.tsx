@@ -1,28 +1,28 @@
+import "@tamagui/native/setup-gesture-handler";
+import "@tamagui/native/setup-safe-area";
 import "../../tamagui.generated.css";
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import { SQLiteProvider } from "expo-sqlite";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import { migrateDbIfNeeded } from "src/db";
+import { DATABASE_NAME, migrateDbIfNeeded } from "src/db";
 import { initPlayer } from "src/player";
-import { PlayerSheet } from "src/ui";
 import { usePreferenceStore } from "src/utils";
-import { useTheme, TamaguiProvider, type TamaguiProviderProps } from "tamagui";
+import { useTheme, TamaguiProvider, type TamaguiProviderProps, Toast } from "tamagui";
 
 import { config } from "../../tamagui.config";
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from "expo-router";
+// Catch any errors thrown by the Layout component.
+export { ErrorBoundary } from "expo-router";
 
+///anchoring layout for deep-linking
 export const unstable_settings = {
-  // Ensure that reloading on `/settings` keeps a back button present.
-  initialRouteName: "(tabs)",
+  anchor: "(tabs)",
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
@@ -47,29 +47,40 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <Providers>
-        <RootLayoutNav />
-      </Providers>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <Providers>
+          <RootLayoutNav />
+        </Providers>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
+}
+
+function resolveActiveTheme(
+  themeSetting: string,
+  colorScheme: "light" | "dark" | null | undefined,
+): "light" | "dark" {
+  if (themeSetting === "Auto") {
+    return colorScheme === "dark" ? "dark" : "light";
+  }
+  return themeSetting.toLowerCase() === "light" ? "light" : "dark";
 }
 
 function Provider({ children, ...rest }: Omit<TamaguiProviderProps, "config" | "defaultTheme">) {
   const colorScheme = useColorScheme();
   const insets = useSafeAreaInsets();
   const { theme: themeSetting } = usePreferenceStore();
-  const activeTheme =
-    themeSetting === "Auto"
-      ? colorScheme === "dark"
-        ? "dark"
-        : "light"
-      : themeSetting.toLowerCase();
+  const activeTheme = resolveActiveTheme(themeSetting, colorScheme);
 
   return (
     <TamaguiProvider config={config} defaultTheme={activeTheme} insets={insets} {...rest}>
-      {children}
-      <PlayerSheet />
+      <Toast position="top-center" closeButton>
+        <Toast.Viewport>
+          <Toast.List />
+        </Toast.Viewport>
+        {children}
+      </Toast>
     </TamaguiProvider>
   );
 }
@@ -77,7 +88,7 @@ function Provider({ children, ...rest }: Omit<TamaguiProviderProps, "config" | "
 const Providers = ({ children }: { children: React.ReactNode }) => {
   return (
     <SQLiteProvider
-      databaseName="sleek-music.db"
+      databaseName={DATABASE_NAME}
       onInit={migrateDbIfNeeded}
       options={{ enableChangeListener: true }}
     >
@@ -89,12 +100,7 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { theme: themeSetting } = usePreferenceStore();
-  const activeTheme =
-    themeSetting === "Auto"
-      ? colorScheme === "dark"
-        ? "dark"
-        : "light"
-      : themeSetting.toLowerCase();
+  const activeTheme = resolveActiveTheme(themeSetting, colorScheme);
   const theme = useTheme();
 
   return (
@@ -102,13 +108,14 @@ function RootLayoutNav() {
       <StatusBar style={activeTheme === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
+          presentation: "card",
           headerStyle: {
-            backgroundColor: theme.background.val,
+            backgroundColor: theme.background?.val,
           },
-          headerTintColor: theme.color.val,
+          headerTintColor: theme.color?.val,
           headerShadowVisible: false,
           contentStyle: {
-            backgroundColor: theme.background.val,
+            backgroundColor: theme.background?.val,
           },
         }}
       >
@@ -116,17 +123,18 @@ function RootLayoutNav() {
           name="(tabs)"
           options={{
             headerShown: false,
+            presentation: "card",
           }}
         />
 
         <Stack.Screen
-          name="settings"
+          name="player"
           options={{
-            title: "Settings",
-            presentation: "modal",
-            animation: "slide_from_left",
+            headerShown: false,
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom",
             gestureEnabled: true,
-            gestureDirection: "horizontal",
+            gestureDirection: "vertical",
           }}
         />
       </Stack>

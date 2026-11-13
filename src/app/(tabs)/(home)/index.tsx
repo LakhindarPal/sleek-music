@@ -1,10 +1,10 @@
-import { ArrowRight as ArrowRightIcon } from "@tamagui/lucide-icons-2";
-import { Link, type RelativePathString } from "expo-router";
-import { LaunchDataResponse } from "src/models";
-import { ContentRails } from "src/ui";
+import type { LaunchDataResponse } from "src/models";
+
+import { Unmatched } from "expo-router";
+import { ContentRails, LoadingView, MoreLink, TryAgain } from "src/ui";
 import { groupBy, apiFetcher, usePreferenceStore } from "src/utils";
 import useSWR from "swr";
-import { Button, Paragraph, ScrollView, Spinner, YStack } from "tamagui";
+import { ScrollView } from "tamagui";
 
 export default function ExplorePage() {
   const { languages } = usePreferenceStore();
@@ -16,33 +16,15 @@ export default function ExplorePage() {
   const latest = groupBy(data?.new_albums, (item) => item.type);
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
   }
 
-  if (error || !data) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center" gap="$3" p="$4">
-        <Paragraph size="$3" color="$color11" text="center">
-          Unable to load explore data. Please check your internet connection.
-        </Paragraph>
-        <Button
-          size="$3"
-          bg="$blue10"
-          color="white"
-          rounded="$10"
-          px="$4"
-          fontWeight="600"
-          pressStyle={{ scale: 0.96 }}
-          onPress={() => mutate()}
-        >
-          Try Again
-        </Button>
-      </YStack>
-    );
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!data) {
+    return <Unmatched />;
   }
 
   const contents = [
@@ -101,30 +83,12 @@ export default function ExplorePage() {
 
   return (
     <ScrollView
-      px="$3"
-      contentContainerStyle={{ pb: 120, pt: 4 }}
-      bg="$background"
+      px="3"
+      bg="background"
+      contentContainerStyle={{ paddingBottom: 120, paddingTop: 4 }}
       showsVerticalScrollIndicator={false}
     >
       <ContentRails data={contents} />
     </ScrollView>
-  );
-}
-
-function MoreLink({ path }: { path: string }) {
-  return (
-    <Link href={path as RelativePathString} asChild>
-      <Button
-        size="$2"
-        chromeless
-        iconAfter={ArrowRightIcon}
-        color="$blue10"
-        fontWeight="600"
-        hoverStyle={{ opacity: 0.8 }}
-        pressStyle={{ opacity: 0.7 }}
-      >
-        View more
-      </Button>
-    </Link>
   );
 }

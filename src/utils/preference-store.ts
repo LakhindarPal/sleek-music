@@ -1,13 +1,16 @@
+import type { Language, Quality } from "src/models";
+
 import Storage from "expo-sqlite/kv-store";
 import { useSyncExternalStore } from "react";
+import QUALITIES from "src/consts/qualities";
 
-export function getPreferredLanguages(): string[] {
+export function getPreferredLanguages(): Language[] {
   const stored = Storage.getItemSync("preferred_languages");
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed as Language[];
       }
     } catch (e) {
       console.error("Failed to parse preferred_languages", e);
@@ -22,26 +25,23 @@ export function getLanguagesParam(): string {
     .join(",");
 }
 
-export function getPreferredQuality(): string {
+export function getPreferredQuality(): Quality {
   const stored = Storage.getItemSync("preferred_quality");
-  if (stored && ["_320", "_160", "_96", "_48", "_12"].includes(stored)) {
-    return stored;
+  if (stored && (QUALITIES as readonly string[]).includes(stored)) {
+    return stored as Quality;
   }
   return "_320";
 }
 
-export function getPreferredAutoplay(): boolean {
+function getPreferredAutoplay(): boolean {
   const stored = Storage.getItemSync("preferred_autoplay");
-  if (stored === "false") {
-    return false;
-  }
-  return true;
+  return stored !== "false";
 }
 
 type PreferenceState = {
   theme: string;
-  quality: string;
-  languages: string[];
+  quality: Quality;
+  languages: (Language | string)[];
   autoplay: boolean;
 };
 
@@ -66,17 +66,22 @@ function getSnapshot() {
 export const preferenceStore = {
   getQuality: () => state.quality,
   getAutoplay: () => state.autoplay,
+  getTheme: () => state.theme,
+  getLanguages: () => state.languages,
   setTheme: (theme: string) => {
     Storage.setItemSync("preferred_theme", theme);
     state = { ...state, theme };
     listeners.forEach((l) => l());
   },
-  setQuality: (quality: string) => {
-    Storage.setItemSync("preferred_quality", quality);
-    state = { ...state, quality };
+  setQuality: (quality: Quality | string) => {
+    const validQuality = (QUALITIES as readonly string[]).includes(quality)
+      ? (quality as Quality)
+      : "_320";
+    Storage.setItemSync("preferred_quality", validQuality);
+    state = { ...state, quality: validQuality };
     listeners.forEach((l) => l());
   },
-  setLanguages: (languages: string[]) => {
+  setLanguages: (languages: (Language | string)[]) => {
     Storage.setItemSync("preferred_languages", JSON.stringify(languages));
     state = { ...state, languages };
     listeners.forEach((l) => l());

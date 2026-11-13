@@ -1,10 +1,11 @@
-import { useLocalSearchParams } from "expo-router";
+import type { TrendingItem } from "src/models";
+
+import { Unmatched, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { TrendingItem } from "src/models";
-import { GridView, MediaCard } from "src/ui";
+import { GridView, LoadingView, MediaCard, TryAgain } from "src/ui";
 import { apiFetcher, getPreferredLanguages } from "src/utils";
 import useSWR from "swr";
-import { ScrollView, Separator, SizableText, Spinner, Tabs, ToggleGroup, YStack } from "tamagui";
+import { ScrollView, Separator, SizableText, Tabs, ToggleGroup, YStack } from "tamagui";
 
 export default function TrendingPage() {
   const { type: initialType } = useLocalSearchParams<{ type: string }>();
@@ -12,19 +13,31 @@ export default function TrendingPage() {
   const [language, setLanguage] = useState(preferredLanguages[0]?.toLowerCase() || "hindi");
   const [type, setType] = useState(initialType || "song");
 
-  const { data, isLoading } = useSWR<TrendingItem[]>(
+  const { data, isLoading, error, mutate } = useSWR<TrendingItem[]>(
     ["trending_data", { entity_type: type, entity_language: language }],
     apiFetcher,
   );
 
+  if (isLoading) {
+    return <LoadingView />;
+  }
+
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!data) {
+    return <Unmatched />;
+  }
+
   return (
-    <YStack flex={1} bg="$background" px="$3" pt="$2">
+    <YStack flex={1} bg="background" px="3" pt="2">
       {preferredLanguages.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={{ flexGrow: 0 }}
-          mb="$1.5"
+          mb="1-5"
         >
           <ToggleGroup
             type="single"
@@ -32,7 +45,7 @@ export default function TrendingPage() {
             onValueChange={(selectedLanguage) => selectedLanguage && setLanguage(selectedLanguage)}
             orientation="horizontal"
             flexDirection="row"
-            gap="$1.5"
+            gap="1-5"
             disableDeactivation
           >
             {preferredLanguages.map((lang) => {
@@ -41,19 +54,21 @@ export default function TrendingPage() {
                 <ToggleGroup.Item
                   key={lang}
                   value={lang.toLowerCase()}
-                  width="auto"
-                  height="$2.5"
-                  rounded="$10"
-                  px="$3"
-                  bg={isSelected ? "$blue10" : "$color3"}
-                  borderColor={isSelected ? "$blue10" : "$borderColor"}
+                  w="auto"
+                  h="auto"
+                  shrink={0}
+                  rounded="full"
+                  px="3"
+                  py="1-5"
+                  bg={isSelected ? "accent-background" : "color-3"}
+                  borderColor={isSelected ? "accent-background" : "border-color"}
                   borderWidth={1}
-                  pressStyle={{ scale: 0.96 }}
+                  scale="press:0.96"
                 >
                   <SizableText
-                    size="$1"
+                    size="1"
                     fontWeight={isSelected ? "600" : "500"}
-                    color={isSelected ? "white" : "$color11"}
+                    color={isSelected ? "white" : "color-9"}
                     numberOfLines={1}
                   >
                     {lang}
@@ -64,9 +79,9 @@ export default function TrendingPage() {
           </ToggleGroup>
         </ScrollView>
       )}
-      <Separator my="$1.5" />
+      <Separator my="1-5" />
       <Tabs value={type} onValueChange={setType} flex={1} flexDirection="column">
-        <Tabs.List width="100%" mb="$2">
+        <Tabs.List w="100%" mb="2" gap="1-5">
           {["Song", "Album", "Playlist"].map((tabName) => {
             const tabValue = tabName.toLowerCase();
             const isSelected = type === tabValue;
@@ -75,18 +90,20 @@ export default function TrendingPage() {
                 key={tabName}
                 value={tabValue}
                 flex={1}
-                height="$2.5"
-                bg={isSelected ? "$blue10" : "$color3"}
-                borderColor={isSelected ? "$blue10" : "$borderColor"}
+                size="sm"
+                rounded="xl"
+                py="2"
+                bg={isSelected ? "accent-background" : "color-3"}
+                borderColor={isSelected ? "accent-background" : "border-color"}
                 borderWidth={1}
-                pressStyle={{ opacity: 0.85 }}
+                opacity="press:0.85"
                 items="center"
                 justify="center"
               >
                 <SizableText
-                  size="$2"
+                  size="2"
                   fontWeight={isSelected ? "700" : "500"}
-                  color={isSelected ? "white" : "$color11"}
+                  color={isSelected ? "white" : "color-9"}
                 >
                   {tabName + "s"}
                 </SizableText>
@@ -97,23 +114,17 @@ export default function TrendingPage() {
 
         {["Song", "Album", "Playlist"].map((tabName) => (
           <Tabs.Content key={tabName} value={tabName.toLowerCase()} flex={1}>
-            {isLoading ? (
-              <YStack flex={1} items="center" justify="center">
-                <Spinner size="large" color="$blue10" />
-              </YStack>
-            ) : (
-              <GridView>
-                {data?.map((item) => (
-                  <MediaCard
-                    key={item.id}
-                    title={item.title}
-                    subtitle={item.subtitle}
-                    image={item.image}
-                    perma_url={item.perma_url}
-                  />
-                ))}
-              </GridView>
-            )}
+            <GridView>
+              {data?.map((item) => (
+                <MediaCard
+                  key={item.id}
+                  title={item.title}
+                  subtitle={item.subtitle}
+                  image={item.image}
+                  perma_url={item.perma_url}
+                />
+              ))}
+            </GridView>
           </Tabs.Content>
         ))}
       </Tabs>

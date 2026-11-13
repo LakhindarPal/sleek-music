@@ -1,13 +1,14 @@
-import { Redirect, type RelativePathString, useLocalSearchParams } from "expo-router";
 import type { PlaylistBase, PlaylistDetailResponse } from "src/models";
-import { ContentRails, HeroBanner, MediaListItem } from "src/ui";
+
+import { Unmatched, useLocalSearchParams } from "expo-router";
+import { ContentRails, HeroBanner, LoadingView, MediaListItem, TryAgain } from "src/ui";
 import { apiFetcher, dedupArtists, durationOfList } from "src/utils";
 import useSWR from "swr";
-import { ScrollView, Separator, SizableText, Spinner, XStack, YGroup, YStack } from "tamagui";
+import { ScrollView, Separator, SizableText, XStack, YStack } from "tamagui";
 
 export default function PlaylistPage() {
   const { token } = useLocalSearchParams();
-  const { data, error, isLoading } = useSWR<PlaylistDetailResponse>(
+  const { data, error, isLoading, mutate } = useSWR<PlaylistDetailResponse>(
     ["playlist_detail", { token }],
     apiFetcher,
   );
@@ -19,15 +20,15 @@ export default function PlaylistPage() {
   );
 
   if (isLoading) {
-    return (
-      <YStack bg="$background" flex={1} items="center" justify="center">
-        <Spinner size="large" color="$blue10" />
-      </YStack>
-    );
+    return <LoadingView />;
   }
 
-  if (error || !data) {
-    return <Redirect href={"/404" as RelativePathString} />;
+  if (error) {
+    return <TryAgain refresh={mutate} />;
+  }
+
+  if (!data) {
+    return <Unmatched />;
   }
 
   const extras = [
@@ -45,9 +46,9 @@ export default function PlaylistPage() {
 
   return (
     <ScrollView
-      px="$3"
-      contentContainerStyle={{ pb: 100 }}
-      bg="$background"
+      px="3"
+      bg="background"
+      contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       <HeroBanner
@@ -59,29 +60,27 @@ export default function PlaylistPage() {
         perma_url={data.perma_url}
         songs={data.list}
       >
-        <XStack items="center" gap="$1.5">
-          <SizableText size="$1" color="$color11">
+        <XStack items="center" gap="1-5">
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {data.subtitle}
           </SizableText>
-          <Separator vertical height={10} />
-          <SizableText size="$1" color="$color11">
+          <Separator vertical h={10} borderColor="border-color" />
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {data.list_count} Songs
           </SizableText>
-          <Separator vertical height={10} />
-          <SizableText size="$1" color="$color11">
+          <Separator vertical h={10} borderColor="border-color" />
+          <SizableText fontSize={13} color="color-9" fontWeight="500">
             {durationOfList(data.list)}
           </SizableText>
         </XStack>
       </HeroBanner>
-      <Separator my="$2" />
-      <YGroup size="$4">
+      <Separator my="3" borderColor="border-color" />
+      <YStack>
         {data.list.map((song, index) => (
-          <YGroup.Item key={song.id}>
-            <MediaListItem {...song} trackNumber={index + 1} />
-          </YGroup.Item>
+          <MediaListItem key={song.id} {...song} trackNumber={index + 1} />
         ))}
-      </YGroup>
-      <Separator my="$2" />
+      </YStack>
+      <Separator my="3" borderColor="border-color" />
       <ContentRails data={extras} />
     </ScrollView>
   );

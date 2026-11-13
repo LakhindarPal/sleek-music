@@ -1,84 +1,73 @@
 import { decodeHTML } from "entities";
 import { Link, type RelativePathString } from "expo-router";
-import { memo } from "react";
 import { parsePath } from "src/utils";
-import { Avatar, Card, Paragraph, Text } from "tamagui";
+import { Avatar, Card, H3, Paragraph } from "tamagui";
 
 export type MediaCardProps = {
   title: string;
-  subtitle?: string;
-  image: string;
+  subtitle?: string | null;
+  image?: string | null;
   perma_url: string;
   circle?: boolean;
 };
 
-export const MediaCard = memo(function MediaCard({
-  title,
-  subtitle,
-  image,
-  perma_url,
-  circle,
-}: MediaCardProps) {
+export function MediaCard({ title, subtitle, image, perma_url, circle }: MediaCardProps) {
   const isCircle = circle || /\/artist\//i.test(perma_url);
 
   return (
     <Link href={parsePath(perma_url) as RelativePathString} asChild>
       <Card
         group
-        width={132}
-        rounded="$3"
-        alignItems="center"
-        hoverStyle={{ opacity: 0.88 }}
-        pressStyle={{ opacity: 0.75, scale: 0.98 }}
+        w={142}
+        rounded="xl"
+        items="center"
+        opacity="hover:0.88 press:0.8"
+        scale="press:0.96"
         bg="transparent"
-        p="$0"
-        $md={{ width: 114 }}
-        $sm={{ width: 98 }}
+        p="0"
       >
-        <Card.Header items="center" p="$0" pb="$1.5">
+        <Card.Header items="center" p="0" pb="1">
           <Avatar
             circular={isCircle}
-            rounded={isCircle ? undefined : "$3"}
-            size="$9"
-            $md={{ size: "$8" }}
-            $sm={{ size: "$7" }}
+            rounded={isCircle ? undefined : 12}
+            size={138}
+            borderWidth={0.5}
+            borderColor="border-color"
           >
-            <Avatar.Image src={image} />
-            <Avatar.Fallback bg="$color4" rounded={isCircle ? undefined : "$3"} />
+            <Avatar.Image src={image ?? undefined} />
+            <Avatar.Fallback bg="color-4" rounded={isCircle ? undefined : 12} />
           </Avatar>
         </Card.Header>
 
-        <Card.Footer items="center" p="$0" width="100%">
-          <Text
-            fontSize="$3"
+        <Card.Footer flexDirection="column" items="center" p="0" w="100%" gap="0-5" pt="1">
+          <H3
+            fontSize={14}
             fontWeight="600"
-            lineHeight="$3"
+            letterSpacing={-0.1}
             text="center"
             numberOfLines={1}
-            px="$0.5"
-            width="100%"
-            $sm={{ fontSize: "$2" }}
-            $group-hover={{ color: "$blue10" }}
-            $group-press={{ color: "$blue9" }}
+            px="0-5"
+            w="100%"
+            color="color"
           >
             {decodeHTML(title)}
-          </Text>
-        </Card.Footer>
+          </H3>
 
-        {subtitle && (
-          <Paragraph
-            text="center"
-            numberOfLines={1}
-            px="$0.5"
-            width="100%"
-            size="$1"
-            color="$color11"
-            mt="$0.5"
-          >
-            {decodeHTML(subtitle)}
-          </Paragraph>
-        )}
+          {subtitle && (
+            <Paragraph
+              text="center"
+              numberOfLines={1}
+              px="0-5"
+              w="100%"
+              fontSize={12}
+              color="color-10"
+              fontWeight="400"
+            >
+              {decodeHTML(subtitle)}
+            </Paragraph>
+          )}
+        </Card.Footer>
       </Card>
     </Link>
   );
-});
+}

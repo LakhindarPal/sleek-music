@@ -1,5 +1,8 @@
-import { baseUrl, defaultParams, sources, UA } from "../constants";
+import { baseUrl, defaultParams, sources } from "src/consts/jiosaavn";
+import { randomUA } from "src/consts/user-agents";
+
 import type { APIEndpoints } from "../models";
+
 import { getLanguagesParam } from "./preference-store";
 
 export async function apiFetcher<K extends keyof APIEndpoints>(
@@ -42,7 +45,7 @@ export async function apiFetcher<T = unknown>([endpoint, params]: [
   const resp = await fetch(url.toString(), {
     headers: {
       accept: "application/json, text/plain, */*",
-      "User-Agent": UA,
+      "User-Agent": randomUA(),
       Cookie,
     },
   });
